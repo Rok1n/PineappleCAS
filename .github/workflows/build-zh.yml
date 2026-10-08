@@ -5,6 +5,7 @@ on:
     branches:
       - l10n/zh-cn-bitmap-prototype
       - feature/fractional-exponents-to-radicals
+      - feature/interactive-examples
   workflow_dispatch:
 
 jobs:
@@ -22,6 +23,10 @@ jobs:
         run: |
           gcc -std=c89 -Wall -Wextra -Werror -Itests -Isrc/calc tests/zh_text_smoke.c -o /tmp/zh_text_smoke
           /tmp/zh_text_smoke
+      - name: Test example preview catalogue
+        run: |
+          gcc -std=c89 -Wall -Wextra -Werror tests/examples_smoke.c -o /tmp/examples_smoke
+          /tmp/examples_smoke
       - name: Build and test CAS rewrite on desktop
         run: |
           make -f pc.makefile
@@ -31,6 +36,6 @@ jobs:
       - name: Upload PCAS.8xp
         uses: actions/upload-artifact@v4
         with:
-          name: PCAS-zh-cn-radical-test
+          name: PCAS-zh-cn-examples-test
           path: bin/PCAS.8xp
           if-no-files-found: error
