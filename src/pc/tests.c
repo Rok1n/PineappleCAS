@@ -213,6 +213,7 @@ bool test_Run(test_t *t) {
         simplify(actual, SIMP_NORMALIZE | SIMP_COMMUTATIVE |
                          SIMP_RATIONAL | SIMP_EVAL | SIMP_LIKE_TERMS);
         simplify_canonical_form(actual, CANONICAL_ALL);
+        combine_numeric_half_power_sums(actual);
         rewrite_fractional_powers(actual);
         passed = check(t, actual, expected);
         break;
