@@ -209,10 +209,22 @@ bool test_Run(test_t *t) {
         actual = a;
         /* Root-containing expressions avoid the legacy like-terms path,
            which can incorrectly reduce subtractions of square roots. */
+        if(strstr(t->arg1, "sqrt(8)-") || strstr(t->arg1, "sqrt(2)-")) {
+            printf("\nDEBUG parsed radical subtraction:\n");
+            dbg_print_tree(actual, 4);
+        }
         simplify(actual, SIMP_NORMALIZE | SIMP_COMMUTATIVE |
                           SIMP_RATIONAL | SIMP_EVAL);
+        if(strstr(t->arg1, "sqrt(8)-") || strstr(t->arg1, "sqrt(2)-")) {
+            printf("\nDEBUG normalized radical subtraction:\n");
+            dbg_print_tree(actual, 4);
+        }
         simplify_canonical_form(actual, CANONICAL_SORT);
         rewrite_fractional_powers(actual);
+        if(strstr(t->arg1, "sqrt(8)-") || strstr(t->arg1, "sqrt(2)-")) {
+            printf("\nDEBUG rewritten radical subtraction:\n");
+            dbg_print_tree(actual, 4);
+        }
         simplify_radical_pairs(actual);
 
         passed = check(t, actual, expected);
