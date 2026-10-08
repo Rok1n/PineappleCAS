@@ -754,12 +754,18 @@ void execute_simplify() {
             console_write("化简中...");
 
             simplify(expression, flags);
-            simplify_canonical_form(expression, CANONICAL_ALL);
 
-            /* Optional output formatting; intentionally the very last
-               transform, to retain TI's native OP_ROOT MathPrint tokens. */
-            if(simplify_context[6]->checked)
+            if(simplify_context[6]->checked) {
+                /* Preserve reciprocal radical form rather than
+                   rationalizing 1/sqrt(X) into sqrt(X)/X. */
+                simplify_canonical_form(expression,
+                                        CANONICAL_ALL ^ CANONICAL_RATIONALIZE);
+                /* Last pass must retain native OP_ROOT MathPrint tokens. */
                 rewrite_fractional_powers(expression);
+            } else {
+                /* Exact original Simplify behavior when unchecked. */
+                simplify_canonical_form(expression, CANONICAL_ALL);
+            }
 
             console_write("导出结果...");
 
