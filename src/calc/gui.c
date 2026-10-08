@@ -16,15 +16,16 @@
 #include "../cas/derivative.h"
 
 #include "interface.h"
+#include "zh_text.h"
 
 void draw_string_centered(char *text, int x, int y) {
     unsigned len;
-    len = gfx_GetStringWidth(text);
+    len = zh_string_width(text);
 
     gfx_SetTextBGColor(COLOR_TRANSPARENT);
     gfx_SetTextFGColor(COLOR_TEXT);
 
-    gfx_PrintStringXY(text, x - len / 2, y);
+    zh_print_xy(text, x - len / 2, y, COLOR_TEXT);
 }
 
 void draw_background() {
@@ -44,17 +45,17 @@ void draw_background() {
 
     draw_string_centered("PineappleCAS v1.1 by Nathan Farlow", LCD_WIDTH / 2, LCD_HEIGHT - 14);
 
-    draw_string_centered("Input", LCD_WIDTH / 4 + 20, 14);
-    draw_string_centered("Output", LCD_WIDTH / 4 * 3 - 20, 14);
+    draw_string_centered("输入", LCD_WIDTH / 4 + 20, 14);
+    draw_string_centered("输出", LCD_WIDTH / 4 * 3 - 20, 14);
 
     /*Outer selection border*/
     gfx_Rectangle(10, 50, LCD_WIDTH - 20, 160);
 
     /*Function rectangle*/
     gfx_Rectangle(10 + 2, 50 + 2, 100, 160 - 4);
-    draw_string_centered("Function", 10 + 2 + 100 / 2, 50 + 10);
+    draw_string_centered("功能", 10 + 2 + 100 / 2, 50 + 10);
 
-    draw_string_centered("Options", 10 + 2 + 100 + (LCD_WIDTH - 10 - 10 - 2 - 100) / 2, 50 + 10);
+    draw_string_centered("选项", 10 + 2 + 100 + (LCD_WIDTH - 10 - 10 - 2 - 100) / 2, 50 + 10);
 }
 
 typedef enum {
@@ -150,7 +151,7 @@ unsigned active_index = 0;
 unsigned function_index = 0;
 
 void draw_label(view_t *v) {
-    gfx_PrintStringXY(v->text, v->x, v->y + v->h / 2 - TEXT_HEIGHT / 2);
+    zh_print_xy(v->text, v->x, v->y + v->h / 2 - TEXT_HEIGHT / 2, COLOR_TEXT);
 }
 
 void draw_checkbox(view_t *v) {
@@ -162,7 +163,7 @@ void draw_checkbox(view_t *v) {
     }
 
     if(v->text != NULL) {
-        gfx_PrintStringXY(v->text, v->x + v->w + 4, v->y + v->h / 2 - TEXT_HEIGHT / 2);
+        zh_print_xy(v->text, v->x + v->w + 4, v->y + v->h / 2 - TEXT_HEIGHT / 2, COLOR_TEXT);
     }
 }
 
@@ -228,7 +229,7 @@ view_t *view_create_checkbox(int x, int y, char *text, bool checked) {
 
 view_t *view_create_button(int x, int y, char *text) {
     int width;
-    width = gfx_GetStringWidth(text);
+    width = zh_string_width(text);
     return view_create(GUI_BUTTON, x - width / 2, y - TEXT_HEIGHT / 2, width + 8, 20, text);
 }
 
@@ -269,8 +270,8 @@ void draw_context(Context c) {
 
     gfx_SetTextFGColor(COLOR_TEXT);
     if(c == CONTEXT_EVALUATE) {
-        gfx_PrintStringXY("From: ", 124 + 25, 96 + 12 + 10 - TEXT_HEIGHT / 2);
-        gfx_PrintStringXY("To: ", 124 + 25, 96 + 12 + 24 + 10 - TEXT_HEIGHT / 2);
+        zh_print_xy("替换前", 124 + 25, 96 + 12 + 10 - TEXT_HEIGHT / 2, COLOR_TEXT);
+        zh_print_xy("替换后", 124 + 25, 96 + 12 + 24 + 10 - TEXT_HEIGHT / 2, COLOR_TEXT);
     } else if(c == CONTEXT_HELP) {
         gfx_PrintStringXY("View https://github.com/", 115, 80 + 10 * 0);
         gfx_PrintStringXY("nathanfarlow/PineappleCAS", 115, 80 + 10 * 1);
@@ -284,7 +285,7 @@ void draw_context(Context c) {
         gfx_PrintStringXY("for help and contributions", 115, 80 + 10 * 9);
         gfx_PrintStringXY("to this project.", 115, 80 + 10 * 10);
     } else if(c == CONTEXT_DERIVATIVE) {
-        gfx_PrintStringXY("Respect to: ", 124, 80);
+        zh_print_xy("求导变量", 124, 80, COLOR_TEXT);
     }
 
     for(i = 0; i < elements_in_context[c]; i++) {
@@ -311,7 +312,7 @@ void console_write(char *text) {
     if(!console_drawn)
         draw_console();
 
-    gfx_PrintStringXY(text, LCD_WIDTH / 6 + 2 + 4, LCD_HEIGHT / 6 + 2 + 4 + console_index * TEXT_HEIGHT);
+    zh_print_xy(text, LCD_WIDTH / 6 + 2 + 4, LCD_HEIGHT / 6 + 2 + 4 + console_index * 12, COLOR_TEXT);
 
     console_index++;
 }
@@ -473,34 +474,34 @@ void gui_Init() {
     io_context[0] = from_drop = view_create_dropdown(LCD_WIDTH / 4 + 20 - 25, 14 + 8 + 4, 0);
     io_context[1] = to_drop = view_create_dropdown(LCD_WIDTH / 4 * 3 - 20 - 25, 14 + 8 + 4, 1);
 
-    function_context[0] = view_create_label(26, 80, "Simplify");
-    function_context[1] = view_create_label(26, 96, "Evaluate");
-    function_context[2] = view_create_label(26, 112, "Expand");
-    function_context[3] = view_create_label(26, 128, "Derivative");
-    function_context[4] = view_create_label(26, 144, "Help");
+    function_context[0] = view_create_label(26, 80, "化简");
+    function_context[1] = view_create_label(26, 96, "求值");
+    function_context[2] = view_create_label(26, 112, "展开");
+    function_context[3] = view_create_label(26, 128, "求导");
+    function_context[4] = view_create_label(26, 144, "帮助");
 
-    simplify_context[0] = view_create_checkbox(124, 80 + 12 * 0, "Basic identities", true);
-    simplify_context[1] = view_create_checkbox(124, 80 + 12 * 1, "Trig identities", true);
-    simplify_context[2] = view_create_checkbox(124, 80 + 12 * 2, "Hyperbolic identities", true);
-    simplify_context[3] = view_create_checkbox(124, 80 + 12 * 3, "Complex identities", true);
-    simplify_context[4] = view_create_checkbox(124, 80 + 12 * 4, "Evaluate trig", true);
-    simplify_context[5] = view_create_checkbox(124, 80 + 12 * 5, "Evaluate inverse trig", true);
-    simplify_context[6] = button_simplify = view_create_button(10 + 2 + 100 + (LCD_WIDTH - 10 - 10 - 2 - 100) / 2, 184, "Simplify");
+    simplify_context[0] = view_create_checkbox(124, 80 + 12 * 0, "基本恒等式", true);
+    simplify_context[1] = view_create_checkbox(124, 80 + 12 * 1, "三角恒等式", true);
+    simplify_context[2] = view_create_checkbox(124, 80 + 12 * 2, "双曲恒等式", true);
+    simplify_context[3] = view_create_checkbox(124, 80 + 12 * 3, "复数恒等式", true);
+    simplify_context[4] = view_create_checkbox(124, 80 + 12 * 4, "计算三角函数", true);
+    simplify_context[5] = view_create_checkbox(124, 80 + 12 * 5, "计算反三角函数", true);
+    simplify_context[6] = button_simplify = view_create_button(10 + 2 + 100 + (LCD_WIDTH - 10 - 10 - 2 - 100) / 2, 184, "化简");
 
-    evaluate_context[0] = view_create_checkbox(124, 80, "Evaluate constants", true);
-    evaluate_context[1] = view_create_checkbox(124, 80 + 12, "Substitue expression:", false);
+    evaluate_context[0] = view_create_checkbox(124, 80, "计算常数", true);
+    evaluate_context[1] = view_create_checkbox(124, 80 + 12, "替换表达式", false);
     evaluate_context[2] = view_create_dropdown(124 + 80, 96 + 12, 10);
     evaluate_context[3] = view_create_dropdown(124 + 80, 96 + 12 + 24, 11);
-    evaluate_context[4] = button_evaluate = view_create_button(10 + 2 + 100 + (LCD_WIDTH - 10 - 10 - 2 - 100) / 2, 184, "Evaluate");
+    evaluate_context[4] = button_evaluate = view_create_button(10 + 2 + 100 + (LCD_WIDTH - 10 - 10 - 2 - 100) / 2, 184, "求值");
 
-    expand_context[0] = view_create_checkbox(124, 80 + 12 * 0, "Expand multiplication", true);
-    expand_context[1] = view_create_checkbox(124, 80 + 12 * 1, "Expand powers", true);
-    expand_context[2] = button_expand = view_create_button(10 + 2 + 100 + (LCD_WIDTH - 10 - 10 - 2 - 100) / 2, 184, "Expand");
+    expand_context[0] = view_create_checkbox(124, 80 + 12 * 0, "展开乘法", true);
+    expand_context[1] = view_create_checkbox(124, 80 + 12 * 1, "展开幂", true);
+    expand_context[2] = button_expand = view_create_button(10 + 2 + 100 + (LCD_WIDTH - 10 - 10 - 2 - 100) / 2, 184, "展开");
 
     derivative_context[0] = view_create_charselect(124 + 90, 80 - (16 - TEXT_HEIGHT) / 2);
-    derivative_context[1] = button_derivative = view_create_button(10 + 2 + 100 + (LCD_WIDTH - 10 - 10 - 2 - 100) / 2, 184, "Differentiate");
+    derivative_context[1] = button_derivative = view_create_button(10 + 2 + 100 + (LCD_WIDTH - 10 - 10 - 2 - 100) / 2, 184, "求导");
 
-    console_button = view_create_button(LCD_WIDTH / 2, LCD_HEIGHT - LCD_HEIGHT / 6 - 20, "Close");
+    console_button = view_create_button(LCD_WIDTH / 2, LCD_HEIGHT - LCD_HEIGHT / 6 - 20, "关闭");
 
     current_context = CONTEXT_FUNCTION;
     active_index = 0;
@@ -559,7 +560,7 @@ void compile_general() {
     static bool compiled = false;
 
     if(!compiled) {
-        console_write("Compiling basic ids...");
+        console_write("编译基本公式...");
         compile(id_general, ID_NUM_GENERAL);
         compiled = true;
     }
@@ -569,7 +570,7 @@ void compile_trig() {
     static bool compiled = false;
 
     if(!compiled) {
-        console_write("Compiling trig ids...");
+        console_write("编译三角公式...");
         compile(id_trig_identities, ID_NUM_TRIG_IDENTITIES);
         compiled = true;
     }
@@ -579,7 +580,7 @@ void compile_trig_constants() {
     static bool compiled = false;
 
     if(!compiled) {
-        console_write("Compiling trig const ids...");
+        console_write("编译三角常数...");
         compile(id_trig_constants, ID_NUM_TRIG_CONSTANTS);
         compiled = true;
     }
@@ -589,7 +590,7 @@ void compile_trig_inv_constants() {
     static bool compiled = false;
 
     if(!compiled) {
-        console_write("Compiling inv trig const ids...");
+        console_write("编译反三角常数...");
         compile(id_trig_inv_constants, ID_NUM_TRIG_INV_CONSTANTS);
         compiled = true;
     }
@@ -599,7 +600,7 @@ void compile_hyperbolic() {
     static bool compiled = false;
 
     if(!compiled) {
-        console_write("Compiling hyperbolic ids...");
+        console_write("编译双曲公式...");
         compile(id_hyperbolic, ID_NUM_HYPERBOLIC);
         compiled = true;
     }
@@ -609,7 +610,7 @@ void compile_complex() {
     static bool compiled = false;
 
     if(!compiled) {
-        console_write("Compiling complex ids...");
+        console_write("编译复数公式...");
         compile(id_complex, ID_NUM_COMPLEX);
         compiled = true;
     }
@@ -619,7 +620,7 @@ void compile_derivative() {
     static bool compiled = false;
 
     if(!compiled) {
-        console_write("Compiling derivative ids...");
+        console_write("编译求导公式...");
         compile(id_derivative, ID_NUM_DERIV);
         compiled = true;
     }
@@ -680,7 +681,7 @@ void execute_simplify() {
         flags |= SIMP_ID_TRIG_INV_CONSTANTS;
     }
 
-    console_write("Parsing input...");
+    console_write("解析输入...");
 
     expression = parse_from_dropdown_index(from_drop->index, &err);
 
@@ -688,33 +689,33 @@ void execute_simplify() {
 
         if(expression != NULL) {
 
-            console_write("Simplifying...");
+            console_write("化简中...");
 
             simplify(expression, flags);
             simplify_canonical_form(expression, CANONICAL_ALL);
 
-            console_write("Exporting...");
+            console_write("导出结果...");
 
             write_to_dropdown_index(to_drop->index, expression, &err);
 
             ast_Cleanup(expression);
 
             if(err == E_SUCCESS) {
-                console_write("Success.");
+                console_write("成功");
             } else {
-                sprintf(buffer, "Failed. %s.", error_text[err]);
+                sprintf(buffer, "失败: %s", error_text[err]);
                 console_write(buffer);
             }
 
         } else {
-            console_write("Failed. Empty input.");
+            console_write("失败: 空输入");
         }
 
     } else {
-        sprintf(buffer, "Failed. %s.", error_text[err]);
+        sprintf(buffer, "失败: %s", error_text[err]);
         console_write(buffer);
         if(from_drop->index == 20)
-            console_write("Make sure Ans is a string.");
+            console_write("确保Ans是字符串");
     }
 
     console_button->active = true;
@@ -731,7 +732,7 @@ void execute_evaluate() {
     should_eval = evaluate_context[0]->checked;
     should_sub = evaluate_context[1]->checked;
 
-    console_write("Parsing input...");
+    console_write("解析输入...");
 
     expression = parse_from_dropdown_index(from_drop->index, &err);
 
@@ -745,73 +746,73 @@ void execute_evaluate() {
                 pcas_ast_t *sub_from, *sub_to;
                 pcas_error_t err;
 
-                console_write("Parsing sub from...");
+                console_write("解析替换前...");
                 sub_from = parse_from_dropdown_index(evaluate_context[2]->index, &err);
                 simplify(sub_from, SIMP_NORMALIZE | SIMP_COMMUTATIVE | SIMP_RATIONAL);
 
                 if(err == E_SUCCESS) {
 
                     if(sub_from != NULL) {
-                        console_write("Parsing sub to...");
+                        console_write("解析替换后...");
                         sub_to = parse_from_dropdown_index(evaluate_context[3]->index, &err);
                         simplify(sub_to, SIMP_NORMALIZE | SIMP_COMMUTATIVE | SIMP_RATIONAL);
 
                         if(err == E_SUCCESS) {
                             if(sub_to != NULL) {
-                                console_write("Substituting...");
+                                console_write("替换中...");
                                 substitute(expression, sub_from, sub_to);
 
                                 ast_Cleanup(sub_from);
                                 ast_Cleanup(sub_to);
                             } else {
-                                console_write("Failed. Empty input.");
+                                console_write("失败: 空输入");
                             }
                         } else {
-                            sprintf(buffer, "Failed. %s.", error_text[err]);
+                            sprintf(buffer, "失败: %s", error_text[err]);
                             console_write(buffer);
                         }
                     } else {
-                        console_write("Failed. Empty input.");
+                        console_write("失败: 空输入");
                     }
 
                 } else {
-                    sprintf(buffer, "Failed. %s.", error_text[err]);
+                    sprintf(buffer, "失败: %s", error_text[err]);
                     console_write(buffer);
                     if(evaluate_context[3]->index == 20)
-                        console_write("Make sure Ans is a string.");
+                        console_write("确保Ans是字符串");
                 }
             }
 
             if(should_eval) {
-                console_write("Evaluating constants..");
+                console_write("计算常数...");
                 eval(expression, EVAL_ALL);    
             }
 
             simplify(expression, SIMP_NORMALIZE | SIMP_COMMUTATIVE | SIMP_RATIONAL | SIMP_EVAL | SIMP_LIKE_TERMS);
             simplify_canonical_form(expression, CANONICAL_ALL);
 
-            console_write("Exporting...");
+            console_write("导出结果...");
 
             write_to_dropdown_index(to_drop->index, expression, &err);
 
             ast_Cleanup(expression);
 
             if(err == E_SUCCESS) {
-                console_write("Success.");
+                console_write("成功");
             } else {
-                sprintf(buffer, "Failed. %s.", error_text[err]);
+                sprintf(buffer, "失败: %s", error_text[err]);
                 console_write(buffer);
             }
 
         } else {
-            console_write("Failed. Empty input.");
+            console_write("失败: 空输入");
         }
 
     } else {
-        sprintf(buffer, "Failed. %s.", error_text[err]);
+        sprintf(buffer, "失败: %s", error_text[err]);
         console_write(buffer);
         if(from_drop->index == 20)
-            console_write("Make sure Ans is a string.");
+            console_write("确保Ans是字符串");
     }
 
     console_button->active = true;
@@ -833,7 +834,7 @@ void execute_expand() {
         flags |= EXP_EXPAND_POWERS;
     }
 
-    console_write("Parsing input...");
+    console_write("解析输入...");
 
     expression = parse_from_dropdown_index(from_drop->index, &err);
 
@@ -841,35 +842,35 @@ void execute_expand() {
 
         if(expression != NULL) {
 
-            console_write("Expanding...");
+            console_write("展开中...");
 
             simplify(expression, SIMP_NORMALIZE | SIMP_COMMUTATIVE | SIMP_RATIONAL);
             expand(expression, flags);
             simplify(expression, SIMP_NORMALIZE | SIMP_COMMUTATIVE | SIMP_RATIONAL | (expand_context[0]->checked ? SIMP_LIKE_TERMS : 0) | SIMP_EVAL);
             simplify_canonical_form(expression, CANONICAL_ALL ^ CANONICAL_COMBINE_POWERS);
 
-            console_write("Exporting...");
+            console_write("导出结果...");
 
             write_to_dropdown_index(to_drop->index, expression, &err);
 
             ast_Cleanup(expression);
 
             if(err == E_SUCCESS) {
-                console_write("Success.");
+                console_write("成功");
             } else {
-                sprintf(buffer, "Failed. %s.", error_text[err]);
+                sprintf(buffer, "失败: %s", error_text[err]);
                 console_write(buffer);
             }
 
         } else {
-            console_write("Failed. Empty input.");
+            console_write("失败: 空输入");
         }
 
     } else {
-        sprintf(buffer, "Failed. %s.", error_text[err]);
+        sprintf(buffer, "失败: %s", error_text[err]);
         console_write(buffer);
         if(from_drop->index == 20)
-            console_write("Make sure Ans is a string.");
+            console_write("确保Ans是字符串");
     }
 
     console_button->active = true;
@@ -884,7 +885,7 @@ void execute_derivative() {
 
     compile_derivative();
     
-    console_write("Parsing input...");
+    console_write("解析输入...");
 
     expression = parse_from_dropdown_index(from_drop->index, &err);
 
@@ -901,7 +902,7 @@ void execute_derivative() {
                 respect_to = parse((uint8_t*)&derivative_context[0]->character, 1, str_table, &err);
             }
 
-            console_write("Differentiating...");
+            console_write("求导中...");
 
             simplify(expression, SIMP_NORMALIZE | SIMP_COMMUTATIVE | SIMP_RATIONAL);
 
@@ -911,28 +912,28 @@ void execute_derivative() {
             simplify(expression, SIMP_NORMALIZE | SIMP_COMMUTATIVE | SIMP_RATIONAL | SIMP_EVAL | SIMP_LIKE_TERMS);
             simplify_canonical_form(expression, CANONICAL_ALL);
 
-            console_write("Exporting...");
+            console_write("导出结果...");
 
             write_to_dropdown_index(to_drop->index, expression, &err);
 
             ast_Cleanup(expression);
 
             if(err == E_SUCCESS) {
-                console_write("Success.");
+                console_write("成功");
             } else {
-                sprintf(buffer, "Failed. %s.", error_text[err]);
+                sprintf(buffer, "失败: %s", error_text[err]);
                 console_write(buffer);
             }
 
         } else {
-            console_write("Failed. Empty input.");
+            console_write("失败: 空输入");
         }
 
     } else {
-        sprintf(buffer, "Failed. %s.", error_text[err]);
+        sprintf(buffer, "失败: %s", error_text[err]);
         console_write(buffer);
         if(from_drop->index == 20)
-            console_write("Make sure Ans is a string.");
+            console_write("确保Ans是字符串");
     }
 
     console_button->active = true;
