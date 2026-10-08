@@ -23,3 +23,7 @@ radical; X^(-1/2)+Y^(3/4); 1/sqrt(X)+(4rootY)^3
 radical; X^(-2)+Y^(-1/3); 1/X^2+1/(3rootY)
 radical; 0^(-2); 0^(-2)
 radical; X^(-2/0); X^(-2/0)
+simplifyradical; X^(5/3); (3rootX)^5
+simplifyradical; X^(1/3); 3rootX
+simplifyradical; sqrt(X)*sqrt(Y); sqrt(XY)
+simplifyradical; sqrt(X)+sqrt(X); 2sqrt(X)
