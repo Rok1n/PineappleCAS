@@ -733,8 +733,8 @@ void execute_simplify() {
 }
 
 /*
- * Explicit rewriting mode: convert positive fractional powers into
- * native OS root-token expressions, e.g. X^(5/3) -> (3rootX)^5.
+ * Explicit rewriting mode: convert signed fractional powers into
+ * native OS root-token expressions, e.g. X^(-5/3) -> 1/(3rootX)^5.
  * Do not run simplify afterwards: normalization turns roots into powers.
  */
 void execute_radical() {
@@ -749,7 +749,7 @@ void execute_radical() {
         if(expression != NULL) {
             console_write("转根式中...");
             if(!rewrite_fractional_powers(expression))
-                console_write("No positive fractional exponent.");
+                console_write("No convertible exponent.");
 
             console_write("导出结果...");
             write_to_dropdown_index(to_drop->index, expression, &err);
