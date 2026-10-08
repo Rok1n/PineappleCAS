@@ -17,6 +17,10 @@ jobs:
           tar -xzf CEdev-Linux.tar.gz
           test -x CEdev/bin/cedev-config
           echo "$PWD/CEdev/bin" >> "$GITHUB_PATH"
+      - name: Test Chinese bitmap renderer on host
+        run: |
+          gcc -std=c89 -Wall -Wextra -Werror -Itests -Isrc/calc tests/zh_text_smoke.c -o /tmp/zh_text_smoke
+          /tmp/zh_text_smoke
       - name: Build calculator program
         run: make
       - name: Upload PCAS.8xp
