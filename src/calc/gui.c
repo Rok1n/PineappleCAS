@@ -17,6 +17,7 @@
 
 #include "interface.h"
 #include "zh_text.h"
+#include "examples.h"
 
 void draw_string_centered(char *text, int x, int y) {
     unsigned len;
@@ -96,11 +97,11 @@ char *dropdown_entries[NUM_DROPDOWN_ENTRIES] = {
 
 #define NUM_IO 2
 #define NUM_FUNCTION 6
-#define NUM_SIMPLIFY 7
-#define NUM_EVALUATE 5
-#define NUM_EXPAND 3
-#define NUM_DERIVATIVE 2
-#define NUM_RADICAL 1
+#define NUM_SIMPLIFY 8
+#define NUM_EVALUATE 6
+#define NUM_EXPAND 4
+#define NUM_DERIVATIVE 3
+#define NUM_RADICAL 2
 #define NUM_HELP 0
 
 view_t *io_context[NUM_IO];
@@ -119,6 +120,7 @@ view_t *button_evaluate;
 view_t *button_expand;
 view_t *button_derivative;
 view_t *button_radical;
+view_t *button_example[PCAS_GUI_EXAMPLE_COUNT];
 
 view_t *console_button;
 
@@ -298,6 +300,47 @@ void draw_context(Context c) {
     }
 }
 
+/* This overlay is visual-only. It never touches input/output variables. */
+bool example_drawn = false;
+
+void draw_example(Context context) {
+    const pcas_example_t *entry;
+    unsigned idx;
+
+    if(context < CONTEXT_SIMPLIFY || context > CONTEXT_RADICAL)
+        return;
+
+    idx = (unsigned)(context - CONTEXT_SIMPLIFY);
+    entry = pcas_gui_example(idx);
+    if(entry == NULL)
+        return;
+
+    gfx_SetColor(COLOR_BACKGROUND);
+    gfx_FillRectangle(30, 42, 260, 158);
+    gfx_SetColor(COLOR_BLUE);
+    gfx_Rectangle(30, 42, 260, 158);
+    gfx_HorizLine(45, 75, 230);
+
+    draw_string_centered("示例", LCD_WIDTH / 2, 54);
+    zh_print_xy(entry->title, 47, 82, COLOR_TEXT);
+    zh_print_xy("输入", 47, 108, COLOR_TEXT);
+    zh_print_xy(entry->input, 112, 108, COLOR_TEXT);
+    zh_print_xy("输出", 47, 130, COLOR_TEXT);
+    zh_print_xy(entry->output, 112, 130, COLOR_TEXT);
+    zh_print_xy(entry->note, 47, 151, COLOR_TEXT);
+    draw_string_centered("ENTER: Back", LCD_WIDTH / 2, 178);
+
+    example_drawn = true;
+}
+
+void dismiss_example(void) {
+    example_drawn = false;
+    draw_background();
+    draw_context(CONTEXT_IO);
+    draw_context(CONTEXT_FUNCTION);
+    draw_context(current_context);
+}
+
 bool console_drawn = false;
 int console_index = 0;
 
@@ -332,6 +375,12 @@ void execute_radical();
 const char alpha_table[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x5C, 0x00, 0x57, 0x52, 0x4D, 0x48, 0x00, 0x00, 0x00, 0x40, 0x56, 0x51, 0x4C, 0x47, 0x00, 0x00, 0x00, 0x5A, 0x55, 0x50, 0x4B, 0x46, 0x43, 0x00, 0x00, 0x59, 0x54, 0x4F, 0x4A, 0x45, 0x42, 0x58, 0x00, 0x58, 0x53, 0x4E, 0x49, 0x44, 0x41, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 void handle_input(uint8_t key) {
+
+    if(example_drawn) {
+        if(key == sk_Enter || key == sk_Left)
+            dismiss_example();
+        return;
+    }
 
     if(console_drawn) {
         if(console_button->active && key == sk_Enter) {
@@ -455,6 +504,8 @@ void handle_input(uint8_t key) {
                 else if(v == button_expand)     execute_expand();
                 else if(v == button_derivative) execute_derivative();
                 else if(v == button_radical) execute_radical();
+                else if(v == button_example[function_index])
+                    draw_example(current_context);
                 break;
             default:
                 break;
@@ -494,22 +545,27 @@ void gui_Init() {
     simplify_context[3] = view_create_checkbox(124, 80 + 12 * 3, "复数恒等式", true);
     simplify_context[4] = view_create_checkbox(124, 80 + 12 * 4, "计算三角函数", true);
     simplify_context[5] = view_create_checkbox(124, 80 + 12 * 5, "计算反三角函数", true);
-    simplify_context[6] = button_simplify = view_create_button(10 + 2 + 100 + (LCD_WIDTH - 10 - 10 - 2 - 100) / 2, 184, "化简");
+    simplify_context[6] = button_example[0] = view_create_button(210, 160, "示例");
+    simplify_context[7] = button_simplify = view_create_button(10 + 2 + 100 + (LCD_WIDTH - 10 - 10 - 2 - 100) / 2, 184, "化简");
 
     evaluate_context[0] = view_create_checkbox(124, 80, "计算常数", true);
     evaluate_context[1] = view_create_checkbox(124, 80 + 12, "替换表达式", false);
     evaluate_context[2] = view_create_dropdown(124 + 80, 96 + 12, 10);
     evaluate_context[3] = view_create_dropdown(124 + 80, 96 + 12 + 24, 11);
-    evaluate_context[4] = button_evaluate = view_create_button(10 + 2 + 100 + (LCD_WIDTH - 10 - 10 - 2 - 100) / 2, 184, "求值");
+    evaluate_context[4] = button_example[1] = view_create_button(210, 160, "示例");
+    evaluate_context[5] = button_evaluate = view_create_button(10 + 2 + 100 + (LCD_WIDTH - 10 - 10 - 2 - 100) / 2, 184, "求值");
 
     expand_context[0] = view_create_checkbox(124, 80 + 12 * 0, "展开乘法", true);
     expand_context[1] = view_create_checkbox(124, 80 + 12 * 1, "展开幂", true);
-    expand_context[2] = button_expand = view_create_button(10 + 2 + 100 + (LCD_WIDTH - 10 - 10 - 2 - 100) / 2, 184, "展开");
+    expand_context[2] = button_example[2] = view_create_button(210, 160, "示例");
+    expand_context[3] = button_expand = view_create_button(10 + 2 + 100 + (LCD_WIDTH - 10 - 10 - 2 - 100) / 2, 184, "展开");
 
     derivative_context[0] = view_create_charselect(124 + 90, 80 - (16 - TEXT_HEIGHT) / 2);
-    derivative_context[1] = button_derivative = view_create_button(10 + 2 + 100 + (LCD_WIDTH - 10 - 10 - 2 - 100) / 2, 184, "求导");
+    derivative_context[1] = button_example[3] = view_create_button(210, 160, "示例");
+    derivative_context[2] = button_derivative = view_create_button(10 + 2 + 100 + (LCD_WIDTH - 10 - 10 - 2 - 100) / 2, 184, "求导");
 
-    radical_context[0] = button_radical = view_create_button(10 + 2 + 100 + (LCD_WIDTH - 10 - 10 - 2 - 100) / 2, 184, "转根式");
+    radical_context[0] = button_example[4] = view_create_button(210, 160, "示例");
+    radical_context[1] = button_radical = view_create_button(10 + 2 + 100 + (LCD_WIDTH - 10 - 10 - 2 - 100) / 2, 184, "转根式");
 
     console_button = view_create_button(LCD_WIDTH / 2, LCD_HEIGHT - LCD_HEIGHT / 6 - 20, "关闭");
 
