@@ -194,6 +194,71 @@ done:
     return changed;
 }
 
+
+/* Combine normalized small numeric half-powers of the same radicand:
+   2^(3/2)+2^(1/2) = 3sqrt(2). Leaves all other expressions untouched. */
+static bool numeric_half_power(pcas_ast_t *term, int *base, int *coefficient) {
+    pcas_ast_t *copy, *b, *exponent, *num, *den;
+    char *digits;
+    int k, p, c, i;
+    bool ok = false;
+    copy = ast_Copy(term);
+    simplify(copy, SIMP_NORMALIZE | SIMP_COMMUTATIVE |
+                   SIMP_RATIONAL | SIMP_EVAL | SIMP_LIKE_TERMS);
+    if(!isoptype(copy, OP_POW)) goto done;
+    b = ast_ChildGet(copy, 0);
+    exponent = ast_ChildGet(copy, 1);
+    if(!b || b->type != NODE_NUMBER || !mp_rat_is_integer(b->op.num) ||
+       !isoptype(exponent, OP_DIV)) goto done;
+    num = ast_ChildGet(exponent, 0);
+    den = ast_ChildGet(exponent, 1);
+    if(!num || num->type != NODE_NUMBER ||
+       !mp_rat_is_integer(num->op.num) || !den ||
+       !is_ast_int(den, 2)) goto done;
+    digits = num_ToString(b->op.num, 6);
+    if(!digits) goto done;
+    k = atoi(digits);
+    free(digits);
+    if(k < 2 || k > 100 || !is_ast_int(b, k)) goto done;
+    digits = num_ToString(num->op.num, 6);
+    if(!digits) goto done;
+    p = atoi(digits);
+    free(digits);
+    if(p < 1 || p > 7 || !(p & 1) || !is_ast_int(num, p)) goto done;
+    c = 1;
+    for(i = 1; i < p; i += 2) {
+        if(c > 100000 / k) goto done;
+        c *= k;
+    }
+    *base = k;
+    *coefficient = c;
+    ok = true;
+done:
+    ast_Cleanup(copy);
+    return ok;
+}
+
+bool combine_numeric_half_power_sums(pcas_ast_t *e) {
+    bool changed = false;
+    pcas_ast_t *child;
+    int a, b, ca, cb;
+    if(!e || e->type != NODE_OPERATOR) return false;
+    for(child = opbase(e); child; child = child->next)
+        changed |= combine_numeric_half_power_sums(child);
+    if(optype(e) == OP_ADD && ast_ChildLength(e) == 2 &&
+       numeric_half_power(ast_ChildGet(e, 0), &a, &ca) &&
+       numeric_half_power(ast_ChildGet(e, 1), &b, &cb) &&
+       a == b && ca + cb <= 100000) {
+        replace_node(e, ast_MakeBinary(OP_MULT,
+            ast_MakeNumber(num_FromInt(ca + cb)),
+            ast_MakeBinary(OP_ROOT,
+                ast_MakeNumber(num_FromInt(2)),
+                ast_MakeNumber(num_FromInt(a)))));
+        changed = true;
+    }
+    return changed;
+}
+
 /*Executes the SIMP_RATIONAL flag*/
 bool simplify_rational(pcas_ast_t *e) {
     unsigned i;
