@@ -39,6 +39,7 @@ TestType resolve_type(char *type) {
     if(!strcmp(type, "expand"))     return TEST_EXPAND;
     if(!strcmp(type, "deriv"))      return TEST_DERIV;
     if(!strcmp(type, "radical"))    return TEST_RADICAL;
+    if(!strcmp(type, "simplify_radical")) return TEST_SIMP_RADICAL;
 
     return TEST_INVALID;
 }
@@ -199,6 +200,13 @@ bool test_Run(test_t *t) {
 
         passed = check(t, actual, expected);
         break;
+    case TEST_SIMP_RADICAL:
+        /* GUI Simplify with checkbox enabled. Normalize and canonicalize
+           before the optional output rewrite, never afterwards. */
+        simplify(a, SIMP_NORMALIZE | SIMP_COMMUTATIVE | SIMP_RATIONAL |
+                    SIMP_EVAL | SIMP_DERIV | SIMP_LIKE_TERMS);
+        simplify_canonical_form(a, CANONICAL_ALL);
+        /* Fall through to the native-root AST/export assertions. */
     case TEST_RADICAL: {
         uint8_t *output;
         unsigned output_len;
