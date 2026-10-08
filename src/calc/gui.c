@@ -748,10 +748,21 @@ void execute_simplify() {
             console_write("化简中...");
 
             simplify(expression, flags);
-            /* Combine equal-index powers before writing native root tokens. */
+            if(simplify_context[6]->checked) {
+                console_write("根式化简...");
+                simplify_numeric_square_roots(expression);
+                simplify(expression, SIMP_NORMALIZE | SIMP_COMMUTATIVE |
+                                      SIMP_RATIONAL | SIMP_EVAL | SIMP_LIKE_TERMS);
+            }
+            /* Combine equal-index roots, then reduce any exposed products. */
             simplify_canonical_form(expression, CANONICAL_ALL);
             if(simplify_context[6]->checked) {
-                console_write("根式表示...");
+                simplify(expression, SIMP_NORMALIZE | SIMP_COMMUTATIVE |
+                                      SIMP_RATIONAL | SIMP_EVAL | SIMP_LIKE_TERMS);
+                simplify_numeric_square_roots(expression);
+                simplify(expression, SIMP_NORMALIZE | SIMP_COMMUTATIVE |
+                                      SIMP_RATIONAL | SIMP_EVAL | SIMP_LIKE_TERMS);
+                simplify_canonical_form(expression, CANONICAL_ALL);
                 rewrite_fractional_powers(expression);
             }
 
