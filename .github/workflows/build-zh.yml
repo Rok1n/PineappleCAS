@@ -6,6 +6,7 @@ on:
       - l10n/zh-cn-bitmap-prototype
       - feature/fractional-exponents-to-radicals
       - feature/interactive-examples
+      - feature/radicals-under-simplify
   workflow_dispatch:
 
 jobs:
@@ -36,6 +37,6 @@ jobs:
       - name: Upload PCAS.8xp
         uses: actions/upload-artifact@v4
         with:
-          name: PCAS-zh-cn-examples-test
+          name: PCAS-zh-cn-simplify-radicals
           path: bin/PCAS.8xp
           if-no-files-found: error
