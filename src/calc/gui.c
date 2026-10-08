@@ -747,7 +747,14 @@ void execute_simplify() {
 
             console_write("化简中...");
 
-            simplify(expression, flags);
+            if(simplify_context[6]->checked && has_radical_input(expression)) {
+                /* Preserve root structure from the legacy like-term path.
+                 * The dedicated radical pass combines like roots below. */
+                simplify(expression, SIMP_NORMALIZE | SIMP_COMMUTATIVE |
+                                     SIMP_RATIONAL | SIMP_EVAL);
+            } else {
+                simplify(expression, flags);
+            }
 
             if(simplify_context[6]->checked) {
                 /* Canonical sort only; do not rationalize or erase radicals. */
