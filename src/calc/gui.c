@@ -749,8 +749,6 @@ void execute_simplify() {
 
             simplify(expression, flags);
             if(simplify_context[6]->checked) {
-                console_write("根式化简...");
-                simplify_numeric_square_roots(expression);
                 simplify(expression, SIMP_NORMALIZE | SIMP_COMMUTATIVE |
                                       SIMP_RATIONAL | SIMP_EVAL | SIMP_LIKE_TERMS);
             }
@@ -759,7 +757,6 @@ void execute_simplify() {
             if(simplify_context[6]->checked) {
                 simplify(expression, SIMP_NORMALIZE | SIMP_COMMUTATIVE |
                                       SIMP_RATIONAL | SIMP_EVAL | SIMP_LIKE_TERMS);
-                simplify_numeric_square_roots(expression);
                 simplify(expression, SIMP_NORMALIZE | SIMP_COMMUTATIVE |
                                       SIMP_RATIONAL | SIMP_EVAL | SIMP_LIKE_TERMS);
                 simplify_canonical_form(expression, CANONICAL_ALL);
