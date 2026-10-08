@@ -65,6 +65,135 @@ void replace_node(pcas_ast_t *a, pcas_ast_t *b) {
     free(b);
 }
 
+/*
+ * Formatting-only rewrite, performed by the dedicated "Convert to radical"
+ * GUI action after reading the equation variable:
+ *
+ *   X^(5/3)  -> (3root(X))^5
+ *   X^(-5/3) -> 1/((3root(X))^5)
+ *   X^(-2)   -> 1/(X^2)
+ *
+ * This routine MUST NOT normalize its output: simplify_normalize() rewrites
+ * OP_ROOT nodes back into powers and loses the MathPrint root token.
+ * The rule requires integer numerator and denominator, with denominator
+ * nonzero. For symbolic bases the reciprocal is only defined when base != 0.
+ * Literal zero with a negative exponent is deliberately left unchanged.
+ */
+bool rewrite_fractional_powers(pcas_ast_t *e) {
+    bool changed = false, negative;
+    pcas_ast_t *child, *base, *exponent, *work = NULL;
+    pcas_ast_t *num_node = NULL, *den_node = NULL;
+    pcas_ast_t *positive_power, *result;
+    mp_rat n, d;
+
+    if(e == NULL || e->type != NODE_OPERATOR)
+        return false;
+
+    /* Rewrite children before replacing this parent. */
+    for(child = opbase(e); child != NULL; child = child->next)
+        changed |= rewrite_fractional_powers(child);
+
+    if(optype(e) != OP_POW)
+        return changed;
+
+    base = ast_ChildGet(e, 0);
+    exponent = ast_ChildGet(e, 1);
+    if(base == NULL || exponent == NULL)
+        return changed;
+
+    /* Evaluate arithmetic *inside a temporary copy of the exponent* only,
+       to accept both X^(-5/3) and a single rational exponent node.
+       The original base, surrounding expression, and input are untouched. */
+    work = ast_Copy(exponent);
+    simplify(work, SIMP_NORMALIZE | SIMP_COMMUTATIVE |
+                   SIMP_RATIONAL | SIMP_EVAL | SIMP_LIKE_TERMS);
+
+    if(isoptype(work, OP_DIV)) {
+        pcas_ast_t *top = ast_ChildGet(work, 0);
+        pcas_ast_t *bottom = ast_ChildGet(work, 1);
+        if(top == NULL || bottom == NULL ||
+           top->type != NODE_NUMBER || bottom->type != NODE_NUMBER ||
+           !mp_rat_is_integer(top->op.num) ||
+           !mp_rat_is_integer(bottom->op.num) ||
+           mp_rat_compare_zero(bottom->op.num) == 0)
+            goto done;
+        num_node = ast_Copy(top);
+        den_node = ast_Copy(bottom);
+    } else if(work->type == NODE_NUMBER) {
+        if(mp_rat_is_integer(work->op.num)) {
+            /* Negative integer exponents also become reciprocals. */
+            num_node = ast_Copy(work);
+            den_node = ast_MakeNumber(num_FromInt(1));
+        } else {
+            /* A literal decimal/rational exponent may be stored in one node. */
+            n = num_FromInt(1);
+            d = num_FromInt(1);
+            mp_rat_reduce(work->op.num);
+            mp_int_copy(&work->op.num->num, &n->num);
+            mp_int_copy(&work->op.num->den, &d->num);
+            num_node = ast_MakeNumber(n);
+            den_node = ast_MakeNumber(d);
+        }
+    } else {
+        goto done;
+    }
+
+    if(mp_rat_compare_zero(num_node->op.num) == 0)
+        goto done;
+
+    negative = (mp_rat_compare_zero(num_node->op.num) < 0) !=
+               (mp_rat_compare_zero(den_node->op.num) < 0);
+    mp_rat_abs(num_node->op.num, num_node->op.num);
+    mp_rat_abs(den_node->op.num, den_node->op.num);
+
+    /* Positive integer powers are not a radical-conversion operation. */
+    if(!negative && is_ast_int(den_node, 1))
+        goto done;
+
+    /* Never turn the undefined 0^(-q) into an apparent valid value. */
+    if(negative && is_ast_int(base, 0))
+        goto done;
+
+    if(is_ast_int(den_node, 1)) {
+        /* Negative integer exponent: 1/X^m (or 1/X for m=1). */
+        ast_Cleanup(den_node);
+        den_node = NULL;
+        if(is_ast_int(num_node, 1)) {
+            ast_Cleanup(num_node);
+            num_node = NULL;
+            positive_power = ast_Copy(base);
+        } else {
+            positive_power = ast_MakeBinary(OP_POW, ast_Copy(base), num_node);
+            num_node = NULL;
+        }
+    } else {
+        /* Fractional exponent: (nroot(X))^m. */
+        pcas_ast_t *root = ast_MakeBinary(OP_ROOT, den_node, ast_Copy(base));
+        den_node = NULL;
+        if(is_ast_int(num_node, 1)) {
+            ast_Cleanup(num_node);
+            num_node = NULL;
+            positive_power = root;
+        } else {
+            positive_power = ast_MakeBinary(OP_POW, root, num_node);
+            num_node = NULL;
+        }
+    }
+
+    result = negative
+        ? ast_MakeBinary(OP_DIV,
+                         ast_MakeNumber(num_FromInt(1)), positive_power)
+        : positive_power;
+    replace_node(e, result);
+    changed = true;
+
+done:
+    ast_Cleanup(num_node);
+    ast_Cleanup(den_node);
+    ast_Cleanup(work);
+    return changed;
+}
+
 /*Executes the SIMP_RATIONAL flag*/
 bool simplify_rational(pcas_ast_t *e) {
     unsigned i;

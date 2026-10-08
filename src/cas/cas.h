@@ -91,6 +91,12 @@
 
 #define SIMP_ALL                        (0xFFFFu)
 
+/* Optional formatting-only conversion X^(m/n) -> (nroot(X))^m;
+   for negative m/n produce 1/(nroot(X))^abs(m), and for negative
+   integers produce 1/X^abs(m). Literal 0 to a negative power is skipped.
+   Call before exporting, not before another simplify() pass. */
+bool rewrite_fractional_powers(pcas_ast_t *e);
+
 /*Simplifies ast. Returns true if changed*/
 bool simplify(pcas_ast_t *e, unsigned short flags);
 

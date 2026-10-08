@@ -95,11 +95,12 @@ char *dropdown_entries[NUM_DROPDOWN_ENTRIES] = {
 };
 
 #define NUM_IO 2
-#define NUM_FUNCTION 5
+#define NUM_FUNCTION 6
 #define NUM_SIMPLIFY 7
 #define NUM_EVALUATE 5
 #define NUM_EXPAND 3
 #define NUM_DERIVATIVE 2
+#define NUM_RADICAL 1
 #define NUM_HELP 0
 
 view_t *io_context[NUM_IO];
@@ -108,6 +109,7 @@ view_t *simplify_context[NUM_SIMPLIFY];
 view_t *evaluate_context[NUM_EVALUATE];
 view_t *expand_context[NUM_EXPAND];
 view_t *derivative_context[NUM_DERIVATIVE];
+view_t *radical_context[NUM_RADICAL];
 view_t *help_context[1];
 
 view_t *from_drop, *to_drop;
@@ -116,6 +118,7 @@ view_t *button_simplify;
 view_t *button_evaluate;
 view_t *button_expand;
 view_t *button_derivative;
+view_t *button_radical;
 
 view_t *console_button;
 
@@ -126,6 +129,7 @@ typedef enum {
     CONTEXT_EVALUATE,
     CONTEXT_EXPAND,
     CONTEXT_DERIVATIVE,
+    CONTEXT_RADICAL,
     CONTEXT_HELP,
     NUM_CONTEXTS
 } Context;
@@ -137,13 +141,14 @@ unsigned elements_in_context[NUM_CONTEXTS] = {
     NUM_EVALUATE,
     NUM_EXPAND,
     NUM_DERIVATIVE,
+    NUM_RADICAL,
     NUM_HELP
 };
 
 view_t **context_lookup[NUM_CONTEXTS] = {
     io_context, function_context, simplify_context,
     evaluate_context, expand_context, derivative_context,
-    help_context
+    radical_context, help_context
 };
 
 Context current_context = CONTEXT_FUNCTION;
@@ -321,6 +326,7 @@ void execute_simplify();
 void execute_evaluate();
 void execute_expand();
 void execute_derivative();
+void execute_radical();
 
 /*the key lookup tables for os_GetCSC()*/
 const char alpha_table[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x5C, 0x00, 0x57, 0x52, 0x4D, 0x48, 0x00, 0x00, 0x00, 0x40, 0x56, 0x51, 0x4C, 0x47, 0x00, 0x00, 0x00, 0x5A, 0x55, 0x50, 0x4B, 0x46, 0x43, 0x00, 0x00, 0x59, 0x54, 0x4F, 0x4A, 0x45, 0x42, 0x58, 0x00, 0x58, 0x53, 0x4E, 0x49, 0x44, 0x41, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -448,6 +454,7 @@ void handle_input(uint8_t key) {
                 else if(v == button_evaluate)   execute_evaluate();
                 else if(v == button_expand)     execute_expand();
                 else if(v == button_derivative) execute_derivative();
+                else if(v == button_radical) execute_radical();
                 break;
             default:
                 break;
@@ -478,7 +485,8 @@ void gui_Init() {
     function_context[1] = view_create_label(26, 96, "求值");
     function_context[2] = view_create_label(26, 112, "展开");
     function_context[3] = view_create_label(26, 128, "求导");
-    function_context[4] = view_create_label(26, 144, "帮助");
+    function_context[4] = view_create_label(26, 144, "转根式");
+    function_context[5] = view_create_label(26, 160, "帮助");
 
     simplify_context[0] = view_create_checkbox(124, 80 + 12 * 0, "基本恒等式", true);
     simplify_context[1] = view_create_checkbox(124, 80 + 12 * 1, "三角恒等式", true);
@@ -500,6 +508,8 @@ void gui_Init() {
 
     derivative_context[0] = view_create_charselect(124 + 90, 80 - (16 - TEXT_HEIGHT) / 2);
     derivative_context[1] = button_derivative = view_create_button(10 + 2 + 100 + (LCD_WIDTH - 10 - 10 - 2 - 100) / 2, 184, "求导");
+
+    radical_context[0] = button_radical = view_create_button(10 + 2 + 100 + (LCD_WIDTH - 10 - 10 - 2 - 100) / 2, 184, "转根式");
 
     console_button = view_create_button(LCD_WIDTH / 2, LCD_HEIGHT - LCD_HEIGHT / 6 - 20, "关闭");
 
@@ -711,6 +721,49 @@ void execute_simplify() {
             console_write("失败: 空输入");
         }
 
+    } else {
+        sprintf(buffer, "失败: %s", error_text[err]);
+        console_write(buffer);
+        if(from_drop->index == 20)
+            console_write("确保Ans是字符串");
+    }
+
+    console_button->active = true;
+    view_draw(console_button);
+}
+
+/*
+ * Explicit rewriting mode: convert signed fractional powers into
+ * native OS root-token expressions, e.g. X^(-5/3) -> 1/(3rootX)^5.
+ * Do not run simplify afterwards: normalization turns roots into powers.
+ */
+void execute_radical() {
+    char buffer[50];
+    pcas_ast_t *expression;
+    pcas_error_t err;
+
+    console_write("解析输入...");
+    expression = parse_from_dropdown_index(from_drop->index, &err);
+
+    if(err == E_SUCCESS) {
+        if(expression != NULL) {
+            console_write("转根式中...");
+            if(!rewrite_fractional_powers(expression))
+                console_write("No convertible exponent.");
+
+            console_write("导出结果...");
+            write_to_dropdown_index(to_drop->index, expression, &err);
+            ast_Cleanup(expression);
+
+            if(err == E_SUCCESS)
+                console_write("成功");
+            else {
+                sprintf(buffer, "失败: %s", error_text[err]);
+                console_write(buffer);
+            }
+        } else {
+            console_write("失败: 空输入");
+        }
     } else {
         sprintf(buffer, "失败: %s", error_text[err]);
         console_write(buffer);

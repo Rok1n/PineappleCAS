@@ -38,6 +38,7 @@ TestType resolve_type(char *type) {
     if(!strcmp(type, "factor"))     return TEST_FACTOR;
     if(!strcmp(type, "expand"))     return TEST_EXPAND;
     if(!strcmp(type, "deriv"))      return TEST_DERIV;
+    if(!strcmp(type, "radical"))    return TEST_RADICAL;
 
     return TEST_INVALID;
 }
@@ -198,6 +199,32 @@ bool test_Run(test_t *t) {
 
         passed = check(t, actual, expected);
         break;
+    case TEST_RADICAL: {
+        uint8_t *output;
+        unsigned output_len;
+        pcas_error_t output_err;
+
+        expected = b;
+        actual = a;
+        rewrite_fractional_powers(actual);
+        passed = check(t, actual, expected);
+
+        /* Optional fourth test field asserts the actual exported TI syntax,
+           not merely AST equivalence. */
+        if(passed && t->arg3[0] != '\0') {
+            output = export_to_binary(actual, &output_len, str_table, &output_err);
+            if(output_err != E_SUCCESS || output == NULL ||
+               strlen(t->arg3) != output_len ||
+               memcmp(output, t->arg3, output_len) != 0) {
+                printf("Radical export syntax mismatch: expected %s, got %.*s\n",
+                       t->arg3, output != NULL ? (int)output_len : 0,
+                       output != NULL ? (char*)output : "");
+                passed = false;
+            }
+            free(output);
+        }
+        break;
+    }
     case TEST_GCD:
         if(c == NULL) {
             printf("Test failed on line %u. Empty third argument.\n", t->line);
