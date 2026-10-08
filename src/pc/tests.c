@@ -205,13 +205,11 @@ bool test_Run(test_t *t) {
         actual = a;
         simplify(actual, SIMP_NORMALIZE | SIMP_COMMUTATIVE | SIMP_RATIONAL |
                          SIMP_EVAL | SIMP_DERIV | SIMP_LIKE_TERMS);
-        simplify_numeric_square_roots(actual);
         simplify(actual, SIMP_NORMALIZE | SIMP_COMMUTATIVE |
                          SIMP_RATIONAL | SIMP_EVAL | SIMP_LIKE_TERMS);
         simplify_canonical_form(actual, CANONICAL_ALL);
         simplify(actual, SIMP_NORMALIZE | SIMP_COMMUTATIVE |
                          SIMP_RATIONAL | SIMP_EVAL | SIMP_LIKE_TERMS);
-        simplify_numeric_square_roots(actual);
         simplify(actual, SIMP_NORMALIZE | SIMP_COMMUTATIVE |
                          SIMP_RATIONAL | SIMP_EVAL | SIMP_LIKE_TERMS);
         simplify_canonical_form(actual, CANONICAL_ALL);
