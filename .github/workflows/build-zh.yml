@@ -6,6 +6,7 @@ on:
       - l10n/zh-cn-bitmap-prototype
       - feature/fractional-exponents-to-radicals
       - feature/interactive-examples
+      - feature/integrated-radical-simplification
   workflow_dispatch:
 
 jobs:
@@ -31,11 +32,12 @@ jobs:
         run: |
           make -f pc.makefile
           ./bin/pineapple test tests-radicals.txt
+          ./bin/pineapple test tests-radical-combine.txt
       - name: Build calculator program
         run: make
       - name: Upload PCAS.8xp
         uses: actions/upload-artifact@v4
         with:
-          name: PCAS-zh-cn-examples-test
+          name: PCAS-zh-cn-radical-combine
           path: bin/PCAS.8xp
           if-no-files-found: error

@@ -96,12 +96,11 @@ char *dropdown_entries[NUM_DROPDOWN_ENTRIES] = {
 };
 
 #define NUM_IO 2
-#define NUM_FUNCTION 6
-#define NUM_SIMPLIFY 8
+#define NUM_FUNCTION 5
+#define NUM_SIMPLIFY 9
 #define NUM_EVALUATE 6
 #define NUM_EXPAND 4
 #define NUM_DERIVATIVE 3
-#define NUM_RADICAL 2
 #define NUM_HELP 0
 
 view_t *io_context[NUM_IO];
@@ -110,7 +109,6 @@ view_t *simplify_context[NUM_SIMPLIFY];
 view_t *evaluate_context[NUM_EVALUATE];
 view_t *expand_context[NUM_EXPAND];
 view_t *derivative_context[NUM_DERIVATIVE];
-view_t *radical_context[NUM_RADICAL];
 view_t *help_context[1];
 
 view_t *from_drop, *to_drop;
@@ -119,7 +117,6 @@ view_t *button_simplify;
 view_t *button_evaluate;
 view_t *button_expand;
 view_t *button_derivative;
-view_t *button_radical;
 view_t *button_example[PCAS_GUI_EXAMPLE_COUNT];
 
 view_t *console_button;
@@ -131,7 +128,6 @@ typedef enum {
     CONTEXT_EVALUATE,
     CONTEXT_EXPAND,
     CONTEXT_DERIVATIVE,
-    CONTEXT_RADICAL,
     CONTEXT_HELP,
     NUM_CONTEXTS
 } Context;
@@ -143,14 +139,13 @@ unsigned elements_in_context[NUM_CONTEXTS] = {
     NUM_EVALUATE,
     NUM_EXPAND,
     NUM_DERIVATIVE,
-    NUM_RADICAL,
     NUM_HELP
 };
 
 view_t **context_lookup[NUM_CONTEXTS] = {
     io_context, function_context, simplify_context,
     evaluate_context, expand_context, derivative_context,
-    radical_context, help_context
+    help_context
 };
 
 Context current_context = CONTEXT_FUNCTION;
@@ -307,7 +302,7 @@ void draw_example(Context context) {
     const pcas_example_t *entry;
     unsigned idx;
 
-    if(context < CONTEXT_SIMPLIFY || context > CONTEXT_RADICAL)
+    if(context < CONTEXT_SIMPLIFY || context > CONTEXT_DERIVATIVE)
         return;
 
     idx = (unsigned)(context - CONTEXT_SIMPLIFY);
@@ -369,7 +364,6 @@ void execute_simplify();
 void execute_evaluate();
 void execute_expand();
 void execute_derivative();
-void execute_radical();
 
 /*the key lookup tables for os_GetCSC()*/
 const char alpha_table[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x5C, 0x00, 0x57, 0x52, 0x4D, 0x48, 0x00, 0x00, 0x00, 0x40, 0x56, 0x51, 0x4C, 0x47, 0x00, 0x00, 0x00, 0x5A, 0x55, 0x50, 0x4B, 0x46, 0x43, 0x00, 0x00, 0x59, 0x54, 0x4F, 0x4A, 0x45, 0x42, 0x58, 0x00, 0x58, 0x53, 0x4E, 0x49, 0x44, 0x41, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -503,7 +497,6 @@ void handle_input(uint8_t key) {
                 else if(v == button_evaluate)   execute_evaluate();
                 else if(v == button_expand)     execute_expand();
                 else if(v == button_derivative) execute_derivative();
-                else if(v == button_radical) execute_radical();
                 else if(v == button_example[function_index])
                     draw_example(current_context);
                 break;
@@ -536,8 +529,7 @@ void gui_Init() {
     function_context[1] = view_create_label(26, 96, "求值");
     function_context[2] = view_create_label(26, 112, "展开");
     function_context[3] = view_create_label(26, 128, "求导");
-    function_context[4] = view_create_label(26, 144, "转根式");
-    function_context[5] = view_create_label(26, 160, "帮助");
+    function_context[4] = view_create_label(26, 144, "帮助");
 
     simplify_context[0] = view_create_checkbox(124, 80 + 12 * 0, "基本恒等式", true);
     simplify_context[1] = view_create_checkbox(124, 80 + 12 * 1, "三角恒等式", true);
@@ -545,8 +537,9 @@ void gui_Init() {
     simplify_context[3] = view_create_checkbox(124, 80 + 12 * 3, "复数恒等式", true);
     simplify_context[4] = view_create_checkbox(124, 80 + 12 * 4, "计算三角函数", true);
     simplify_context[5] = view_create_checkbox(124, 80 + 12 * 5, "计算反三角函数", true);
-    simplify_context[6] = button_example[0] = view_create_button(210, 160, "示例");
-    simplify_context[7] = button_simplify = view_create_button(10 + 2 + 100 + (LCD_WIDTH - 10 - 10 - 2 - 100) / 2, 184, "化简");
+    simplify_context[6] = view_create_checkbox(124, 80 + 12 * 6, "根式化简", true);
+    simplify_context[7] = button_example[0] = view_create_button(164, 184, "示例");
+    simplify_context[8] = button_simplify = view_create_button(254, 184, "化简");
 
     evaluate_context[0] = view_create_checkbox(124, 80, "计算常数", true);
     evaluate_context[1] = view_create_checkbox(124, 80 + 12, "替换表达式", false);
@@ -563,9 +556,6 @@ void gui_Init() {
     derivative_context[0] = view_create_charselect(124 + 90, 80 - (16 - TEXT_HEIGHT) / 2);
     derivative_context[1] = button_example[3] = view_create_button(210, 160, "示例");
     derivative_context[2] = button_derivative = view_create_button(10 + 2 + 100 + (LCD_WIDTH - 10 - 10 - 2 - 100) / 2, 184, "求导");
-
-    radical_context[0] = button_example[4] = view_create_button(210, 160, "示例");
-    radical_context[1] = button_radical = view_create_button(10 + 2 + 100 + (LCD_WIDTH - 10 - 10 - 2 - 100) / 2, 184, "转根式");
 
     console_button = view_create_button(LCD_WIDTH / 2, LCD_HEIGHT - LCD_HEIGHT / 6 - 20, "关闭");
 
@@ -719,6 +709,7 @@ void execute_simplify() {
 
     pcas_ast_t *expression;
     pcas_error_t err;
+    bool use_radical_mode;
 
     unsigned short flags = SIMP_NORMALIZE | SIMP_COMMUTATIVE | SIMP_RATIONAL | SIMP_EVAL | SIMP_DERIV | SIMP_LIKE_TERMS;
 
@@ -757,8 +748,25 @@ void execute_simplify() {
 
             console_write("化简中...");
 
-            simplify(expression, flags);
-            simplify_canonical_form(expression, CANONICAL_ALL);
+            use_radical_mode = simplify_context[6]->checked &&
+                               has_radical_input(expression);
+            if(use_radical_mode) {
+                /* Preserve root structure from the legacy like-term path.
+                 * The dedicated radical pass combines like roots below. */
+                simplify(expression, SIMP_NORMALIZE | SIMP_COMMUTATIVE |
+                                     SIMP_RATIONAL | SIMP_EVAL);
+            } else {
+                simplify(expression, flags);
+            }
+
+            if(use_radical_mode) {
+                /* Canonical sort only; do not rationalize or erase radicals. */
+                simplify_canonical_form(expression, CANONICAL_SORT);
+                rewrite_fractional_powers(expression);
+                simplify_radical_pairs(expression);
+            } else {
+                simplify_canonical_form(expression, CANONICAL_ALL);
+            }
 
             console_write("导出结果...");
 
@@ -777,49 +785,6 @@ void execute_simplify() {
             console_write("失败: 空输入");
         }
 
-    } else {
-        sprintf(buffer, "失败: %s", error_text[err]);
-        console_write(buffer);
-        if(from_drop->index == 20)
-            console_write("确保Ans是字符串");
-    }
-
-    console_button->active = true;
-    view_draw(console_button);
-}
-
-/*
- * Explicit rewriting mode: convert signed fractional powers into
- * native OS root-token expressions, e.g. X^(-5/3) -> 1/(3rootX)^5.
- * Do not run simplify afterwards: normalization turns roots into powers.
- */
-void execute_radical() {
-    char buffer[50];
-    pcas_ast_t *expression;
-    pcas_error_t err;
-
-    console_write("解析输入...");
-    expression = parse_from_dropdown_index(from_drop->index, &err);
-
-    if(err == E_SUCCESS) {
-        if(expression != NULL) {
-            console_write("转根式中...");
-            if(!rewrite_fractional_powers(expression))
-                console_write("No convertible exponent.");
-
-            console_write("导出结果...");
-            write_to_dropdown_index(to_drop->index, expression, &err);
-            ast_Cleanup(expression);
-
-            if(err == E_SUCCESS)
-                console_write("成功");
-            else {
-                sprintf(buffer, "失败: %s", error_text[err]);
-                console_write(buffer);
-            }
-        } else {
-            console_write("失败: 空输入");
-        }
     } else {
         sprintf(buffer, "失败: %s", error_text[err]);
         console_write(buffer);

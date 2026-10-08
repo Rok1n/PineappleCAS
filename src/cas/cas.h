@@ -97,6 +97,12 @@
    Call before exporting, not before another simplify() pass. */
 bool rewrite_fractional_powers(pcas_ast_t *e);
 
+/* Simplifies bounded positive integer radicals and combines matching roots.
+   Only call after rewriting powers to roots, before exporting. */
+bool simplify_radical_pairs(pcas_ast_t *e);
+/* True if the input contains a root or fractional power. */
+bool has_radical_input(pcas_ast_t *e);
+
 /*Simplifies ast. Returns true if changed*/
 bool simplify(pcas_ast_t *e, unsigned short flags);
 
