@@ -760,6 +760,7 @@ void execute_simplify() {
                 simplify(expression, SIMP_NORMALIZE | SIMP_COMMUTATIVE |
                                       SIMP_RATIONAL | SIMP_EVAL | SIMP_LIKE_TERMS);
                 simplify_canonical_form(expression, CANONICAL_ALL);
+                combine_numeric_half_power_sums(expression);
                 rewrite_fractional_powers(expression);
             }
 
