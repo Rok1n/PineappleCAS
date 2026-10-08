@@ -1,0 +1,12 @@
+radical; X^(5/3); (3rootX)^5
+radical; X^(1/3); 3rootX
+radical; X^(2/7); (7rootX)^2
+radical; X^(3/2); (sqrt(X))^3
+radical; (X+1)^(3/2); (sqrt(X+1))^3
+radical; X^(1/2)+Y^(3/4); sqrt(X)+(4rootY)^3
+radical; X^2; X^2
+radical; X^Y; X^Y
+radical; X^(3/1); X^(3/1)
+radical; X^0.5; sqrt(X)
+radical; X^(5/3)+X^(1/3); (3rootX)^5+3rootX
+radical; X^(2/0); X^(2/0)
