@@ -1,0 +1,31 @@
+name: Build PineappleCAS Chinese prototype
+
+on:
+  push:
+    branches:
+      - l10n/zh-cn-bitmap-prototype
+  workflow_dispatch:
+
+jobs:
+  build-ce:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download CE C toolchain v15.0
+        run: |
+          curl --fail --location --retry 3 --output CEdev-Linux.tar.gz https://github.com/CE-Programming/toolchain/releases/download/v15.0/CEdev-Linux.tar.gz
+          tar -xzf CEdev-Linux.tar.gz
+          test -x CEdev/bin/cedev-config
+          echo "$PWD/CEdev/bin" >> "$GITHUB_PATH"
+      - name: Test Chinese bitmap renderer on host
+        run: |
+          gcc -std=c89 -Wall -Wextra -Werror -Itests -Isrc/calc tests/zh_text_smoke.c -o /tmp/zh_text_smoke
+          /tmp/zh_text_smoke
+      - name: Build calculator program
+        run: make
+      - name: Upload PCAS.8xp
+        uses: actions/upload-artifact@v4
+        with:
+          name: PCAS-zh-cn-test
+          path: bin/PCAS.8xp
+          if-no-files-found: error

@@ -4,7 +4,8 @@
 
 NAME         = PCAS
 COMPRESSED   = YES
-ICON         = iconc.png
+# Upstream referenced iconc.png, but that file is not present in the repository.
+# Use toolchain's default program icon.
 DESCRIPTION  = "PineappleCAS"
 
 CFLAGS       = -Wall -Oz
