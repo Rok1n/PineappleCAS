@@ -65,6 +65,69 @@ void replace_node(pcas_ast_t *a, pcas_ast_t *b) {
     free(b);
 }
 
+/*
+ * Formatting-only rewrite: X^(m/n) => (nroot(X))^m.
+ * Unlike simplify_normalize(), this deliberately preserves OP_ROOT nodes so
+ * export_to_binary() can emit the TI-84's native MathPrint root token.
+ *
+ * Apply AFTER normal algebraic manipulation, just before export. Never
+ * simplify_normalize() the resulting tree or the roots turn back into powers.
+ * Positive integer m and n>1 are supported. Signed, symbolic, and zero
+ * denominators are deliberately ignored.
+ */
+bool rewrite_fractional_powers(pcas_ast_t *e) {
+    bool changed = false;
+    pcas_ast_t *child, *exponent, *num_node = NULL, *den_node = NULL;
+    pcas_ast_t *root;
+
+    if(e == NULL || e->type != NODE_OPERATOR)
+        return false;
+
+    /* Bottom-up so nested powers are handled without normalizing new roots. */
+    for(child = opbase(e); child != NULL; child = child->next)
+        changed |= rewrite_fractional_powers(child);
+
+    if(optype(e) != OP_POW)
+        return changed;
+
+    exponent = ast_ChildGet(e, 1);
+    if(exponent == NULL)
+        return changed;
+
+    if(isoptype(exponent, OP_DIV)) {
+        pcas_ast_t *n = ast_ChildGet(exponent, 0);
+        pcas_ast_t *d = ast_ChildGet(exponent, 1);
+        if(n == NULL || d == NULL || n->type != NODE_NUMBER ||
+           d->type != NODE_NUMBER ||
+           !mp_rat_is_integer(n->op.num) || !mp_rat_is_integer(d->op.num) ||
+           mp_rat_compare_zero(n->op.num) <= 0 ||
+           mp_rat_compare_value(d->op.num, 1, 1) <= 0)
+            return changed;
+        num_node = ast_Copy(n);
+        den_node = ast_Copy(d);
+    } else if(exponent->type == NODE_NUMBER && !mp_rat_is_integer(exponent->op.num) &&
+              mp_rat_compare_zero(exponent->op.num) > 0) {
+        /* Some parsers store numeric 5/3 as a single rational number. */
+        mp_rat num = num_FromInt(1), den = num_FromInt(1);
+        mp_rat_reduce(exponent->op.num);
+        mp_int_copy(&exponent->op.num->num, &num->num);
+        mp_int_copy(&exponent->op.num->den, &den->num);
+        num_node = ast_MakeNumber(num);
+        den_node = ast_MakeNumber(den);
+    } else {
+        return changed;
+    }
+
+    root = ast_MakeBinary(OP_ROOT, den_node, ast_Copy(ast_ChildGet(e, 0)));
+    if(is_ast_int(num_node, 1)) {
+        ast_Cleanup(num_node);
+        replace_node(e, root);
+    } else {
+        replace_node(e, ast_MakeBinary(OP_POW, root, num_node));
+    }
+    return true;
+}
+
 /*Executes the SIMP_RATIONAL flag*/
 bool simplify_rational(pcas_ast_t *e) {
     unsigned i;
