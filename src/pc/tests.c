@@ -39,6 +39,7 @@ TestType resolve_type(char *type) {
     if(!strcmp(type, "expand"))     return TEST_EXPAND;
     if(!strcmp(type, "deriv"))      return TEST_DERIV;
     if(!strcmp(type, "radical"))    return TEST_RADICAL;
+    if(!strcmp(type, "simplifyradical")) return TEST_SIMPLIFY_RADICAL;
 
     return TEST_INVALID;
 }
@@ -197,6 +198,23 @@ bool test_Run(test_t *t) {
         /*We do this to change -1 * 23 to -23 to be able to compare*/
         simplify(expected, SIMP_NORMALIZE | SIMP_COMMUTATIVE | SIMP_RATIONAL | SIMP_EVAL);
 
+        passed = check(t, actual, expected);
+        break;
+    case TEST_SIMPLIFY_RADICAL:
+        expected = b;
+        actual = a;
+        simplify(actual, SIMP_NORMALIZE | SIMP_COMMUTATIVE | SIMP_RATIONAL |
+                         SIMP_EVAL | SIMP_DERIV | SIMP_LIKE_TERMS);
+        simplify(actual, SIMP_NORMALIZE | SIMP_COMMUTATIVE |
+                         SIMP_RATIONAL | SIMP_EVAL | SIMP_LIKE_TERMS);
+        simplify_canonical_form(actual, CANONICAL_ALL);
+        simplify(actual, SIMP_NORMALIZE | SIMP_COMMUTATIVE |
+                         SIMP_RATIONAL | SIMP_EVAL | SIMP_LIKE_TERMS);
+        simplify(actual, SIMP_NORMALIZE | SIMP_COMMUTATIVE |
+                         SIMP_RATIONAL | SIMP_EVAL | SIMP_LIKE_TERMS);
+        simplify_canonical_form(actual, CANONICAL_ALL);
+        combine_numeric_half_power_sums(actual);
+        rewrite_fractional_powers(actual);
         passed = check(t, actual, expected);
         break;
     case TEST_RADICAL: {

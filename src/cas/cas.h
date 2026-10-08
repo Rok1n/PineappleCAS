@@ -96,6 +96,8 @@
    integers produce 1/X^abs(m). Literal 0 to a negative power is skipped.
    Call before exporting, not before another simplify() pass. */
 bool rewrite_fractional_powers(pcas_ast_t *e);
+bool simplify_numeric_square_roots(pcas_ast_t *e);
+bool combine_numeric_half_power_sums(pcas_ast_t *e);
 
 /*Simplifies ast. Returns true if changed*/
 bool simplify(pcas_ast_t *e, unsigned short flags);
