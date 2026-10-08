@@ -30,3 +30,5 @@ simplifyradical; sqrt(X)+sqrt(X); 2sqrt(X)
 simplifyradical; sqrt(2)*sqrt(3); sqrt(6)
 simplifyradical; 3root(X)*3root(Y); 3root(XY)
 simplifyradical; sqrt(X)+sqrt(Y); sqrt(X)+sqrt(Y)
+simplifyradical; X^(-5/3); 1/(3rootX)^5
+simplifyradical; sqrt(X)*sqrt(X); X
