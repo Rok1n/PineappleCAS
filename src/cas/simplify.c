@@ -194,6 +194,81 @@ done:
     return changed;
 }
 
+/*
+ * Extract square factors from small positive numeric square roots.
+ * sqrt(8) -> 2*sqrt(2); sqrt(72) -> 6*sqrt(2).
+ * This is a real-domain formatting pass. Large integers, symbolic/negative
+ * radicands and higher roots are left unchanged. Caller then runs normal
+ * like-term simplification to combine e.g. sqrt(8)+sqrt(2).
+ */
+bool simplify_numeric_square_roots(pcas_ast_t *e) {
+    bool changed = false;
+    pcas_ast_t *child, *radicand = NULL, *degree = NULL;
+    char *digits, *endptr;
+    unsigned long number, reduced, factor, max_factor;
+    pcas_ast_t *root, *term;
+
+    if(e == NULL || e->type != NODE_OPERATOR)
+        return false;
+
+    for(child = opbase(e); child != NULL; child = child->next)
+        changed |= simplify_numeric_square_roots(child);
+
+    if(isoptype(e, OP_ROOT)) {
+        degree = ast_ChildGet(e, 0);
+        radicand = ast_ChildGet(e, 1);
+        if(degree == NULL || !is_ast_int(degree, 2))
+            return changed;
+    } else if(isoptype(e, OP_POW)) {
+        degree = ast_ChildGet(e, 1);
+        radicand = ast_ChildGet(e, 0);
+        if(degree == NULL ||
+           !(isoptype(degree, OP_DIV) &&
+             is_ast_int(ast_ChildGet(degree, 0), 1) &&
+             is_ast_int(ast_ChildGet(degree, 1), 2)) )
+            return changed;
+    } else {
+        return changed;
+    }
+
+    if(radicand == NULL || radicand->type != NODE_NUMBER ||
+       !mp_rat_is_integer(radicand->op.num) ||
+       mp_rat_compare_zero(radicand->op.num) <= 0)
+        return changed;
+
+    digits = num_ToString(radicand->op.num, 6);
+    if(digits == NULL)
+        return changed;
+
+    number = strtoul(digits, &endptr, 10);
+    if(endptr == digits || *endptr != '\0' || number > 1000000UL) {
+        free(digits);
+        return changed;
+    }
+    free(digits);
+
+    max_factor = 1;
+    for(factor = 2; factor * factor <= number; ++factor) {
+        if(number % (factor * factor) == 0)
+            max_factor = factor;
+    }
+    if(max_factor == 1)
+        return changed;
+
+    reduced = number / (max_factor * max_factor);
+    if(reduced == 1) {
+        term = ast_MakeNumber(num_FromInt((mp_small)max_factor));
+    } else {
+        root = ast_MakeBinary(OP_ROOT,
+            ast_MakeNumber(num_FromInt(2)),
+            ast_MakeNumber(num_FromInt((mp_small)reduced)));
+        term = ast_MakeBinary(OP_MULT,
+            ast_MakeNumber(num_FromInt((mp_small)max_factor)), root);
+    }
+    replace_node(e, term);
+    return true;
+}
+
 /*Executes the SIMP_RATIONAL flag*/
 bool simplify_rational(pcas_ast_t *e) {
     unsigned i;
