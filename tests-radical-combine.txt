@@ -6,7 +6,7 @@ radmerge; sqrt(2)+sqrt(2); 2sqrt(2)
 radmerge; sqrt(12)+sqrt(3); 3sqrt(3)
 radmerge; sqrt(8)-sqrt(2); sqrt(2)
 radmerge; sqrt(2)-sqrt(2); 0
-radmerge; cbrt(2)*cbrt(4); 2
+radmerge; 3root(2)*3root(4); 2
 radmerge; sqrt(9)+sqrt(16); 7
 radmerge; X^(5/3); (3rootX)^5
 radmerge; X^(-5/3); 1/(3rootX)^5
