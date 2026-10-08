@@ -709,6 +709,7 @@ void execute_simplify() {
 
     pcas_ast_t *expression;
     pcas_error_t err;
+    bool use_radical_mode;
 
     unsigned short flags = SIMP_NORMALIZE | SIMP_COMMUTATIVE | SIMP_RATIONAL | SIMP_EVAL | SIMP_DERIV | SIMP_LIKE_TERMS;
 
@@ -747,7 +748,9 @@ void execute_simplify() {
 
             console_write("化简中...");
 
-            if(simplify_context[6]->checked && has_radical_input(expression)) {
+            use_radical_mode = simplify_context[6]->checked &&
+                               has_radical_input(expression);
+            if(use_radical_mode) {
                 /* Preserve root structure from the legacy like-term path.
                  * The dedicated radical pass combines like roots below. */
                 simplify(expression, SIMP_NORMALIZE | SIMP_COMMUTATIVE |
@@ -756,7 +759,7 @@ void execute_simplify() {
                 simplify(expression, flags);
             }
 
-            if(simplify_context[6]->checked) {
+            if(use_radical_mode) {
                 /* Canonical sort only; do not rationalize or erase radicals. */
                 simplify_canonical_form(expression, CANONICAL_SORT);
                 rewrite_fractional_powers(expression);
