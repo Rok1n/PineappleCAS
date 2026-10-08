@@ -205,7 +205,7 @@ bool test_Run(test_t *t) {
            before the optional output rewrite, never afterwards. */
         simplify(a, SIMP_NORMALIZE | SIMP_COMMUTATIVE | SIMP_RATIONAL |
                     SIMP_EVAL | SIMP_DERIV | SIMP_LIKE_TERMS);
-        simplify_canonical_form(a, CANONICAL_ALL);
+        simplify_canonical_form(a, CANONICAL_ALL ^ CANONICAL_RATIONALIZE);
         /* Fall through to the native-root AST/export assertions. */
     case TEST_RADICAL: {
         uint8_t *output;
