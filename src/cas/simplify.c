@@ -205,7 +205,8 @@ bool simplify_numeric_square_roots(pcas_ast_t *e) {
     bool changed = false;
     pcas_ast_t *child, *radicand = NULL, *degree = NULL;
     char *digits, *endptr;
-    unsigned long number, reduced, factor, max_factor;
+    unsigned long number, reduced, factor, max_factor, multiplier = 1;
+    unsigned exponent_top = 1, i;
     pcas_ast_t *root, *term;
 
     if(e == NULL || e->type != NODE_OPERATOR)
@@ -222,10 +223,16 @@ bool simplify_numeric_square_roots(pcas_ast_t *e) {
     } else if(isoptype(e, OP_POW)) {
         degree = ast_ChildGet(e, 1);
         radicand = ast_ChildGet(e, 0);
-        if(degree == NULL ||
-           !(isoptype(degree, OP_DIV) &&
-             is_ast_int(ast_ChildGet(degree, 0), 1) &&
-             is_ast_int(ast_ChildGet(degree, 1), 2)) )
+        if(degree == NULL || !isoptype(degree, OP_DIV) ||
+           !is_ast_int(ast_ChildGet(degree, 1), 2))
+            return changed;
+        /* 2^(3/2) = 2 sqrt(2), 2^(5/2) = 4 sqrt(2).
+           Restrict to positive odd small powers to avoid overflow. */
+        for(exponent_top = 1; exponent_top <= 9; exponent_top += 2) {
+            if(is_ast_int(ast_ChildGet(degree, 0), (int)exponent_top))
+                break;
+        }
+        if(exponent_top > 9)
             return changed;
     } else {
         return changed;
@@ -252,12 +259,20 @@ bool simplify_numeric_square_roots(pcas_ast_t *e) {
         if(number % (factor * factor) == 0)
             max_factor = factor;
     }
-    if(max_factor == 1)
+    for(i = 0; i < (exponent_top - 1) / 2; ++i) {
+        if(number == 0 || multiplier > 1000000UL / number)
+            return changed;
+        multiplier *= number;
+    }
+    if(multiplier > 1000000UL / max_factor)
+        return changed;
+    multiplier *= max_factor;
+    if(multiplier == 1)
         return changed;
 
     reduced = number / (max_factor * max_factor);
     if(reduced == 1) {
-        term = ast_MakeNumber(num_FromInt((mp_small)max_factor));
+        term = ast_MakeNumber(num_FromInt((mp_small)multiplier));
     } else {
         root = ast_MakeBinary(OP_ROOT,
             ast_MakeNumber(num_FromInt(2)),
