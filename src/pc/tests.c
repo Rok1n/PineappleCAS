@@ -207,8 +207,10 @@ bool test_Run(test_t *t) {
 
         expected = b;
         actual = a;
+        /* Root-containing expressions avoid the legacy like-terms path,
+           which can incorrectly reduce subtractions of square roots. */
         simplify(actual, SIMP_NORMALIZE | SIMP_COMMUTATIVE |
-                          SIMP_RATIONAL | SIMP_EVAL | SIMP_LIKE_TERMS);
+                          SIMP_RATIONAL | SIMP_EVAL);
         simplify_canonical_form(actual, CANONICAL_SORT);
         rewrite_fractional_powers(actual);
         simplify_radical_pairs(actual);
