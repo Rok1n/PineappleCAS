@@ -13,6 +13,27 @@ extern bool simplify_commutative(pcas_ast_t *e);
 
 #define RADICAL_BOUND 100000
 
+/* Detect roots or non-integral powers before general simplification.
+ * The legacy like-term/identity path can alter radical combinations
+ * prematurely, so use conservative algebra for these expressions. */
+bool has_radical_input(pcas_ast_t *e) {
+    pcas_ast_t *child;
+    if(e == NULL || e->type != NODE_OPERATOR)
+        return false;
+    if(optype(e) == OP_ROOT)
+        return true;
+    if(optype(e) == OP_POW) {
+        pcas_ast_t *exp = ast_ChildGet(e, 1);
+        if(exp != NULL && (isoptype(exp, OP_DIV) ||
+           (exp->type == NODE_NUMBER && !mp_rat_is_integer(exp->op.num))))
+            return true;
+    }
+    for(child = opbase(e); child != NULL; child = child->next)
+        if(has_radical_input(child))
+            return true;
+    return false;
+}
+
 static bool bounded_int(pcas_ast_t *e, mp_small *n, bool signed_value) {
     if(e == NULL || e->type != NODE_NUMBER ||
        !mp_rat_is_integer(e->op.num))
