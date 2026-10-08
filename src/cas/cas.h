@@ -91,6 +91,11 @@
 
 #define SIMP_ALL                        (0xFFFFu)
 
+/* Optional formatting-only conversion X^(m/n) -> (nroot(X))^m,
+   for m>0, n>1 (or to nroot(X) when m=1). Call before exporting,
+   not before another simplify() pass. Returns true if transformed. */
+bool rewrite_fractional_powers(pcas_ast_t *e);
+
 /*Simplifies ast. Returns true if changed*/
 bool simplify(pcas_ast_t *e, unsigned short flags);
 
